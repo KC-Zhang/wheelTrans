@@ -1,0 +1,14 @@
+# Ignore compiled binaries
+/target/
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore dependency directories
+Cargo.lock
+
+# Ignore environment file (if using dotenv)
+.env

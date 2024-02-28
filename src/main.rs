@@ -1,43 +1,13 @@
 use reqwest;
-use std::env;
 use urlencoding;
+use serde::Deserialize;
+use google_apis::fleetengine::*;
+use yup_oauth2::{read_service_account_key, ServiceAccountAuthenticator};
+
+mod lib;
 
 fn load_env() {
     dotenv::dotenv().ok();
-}
-
-
-async fn get_direction(
-    origin: &str,
-    destination: &str,
-    waypoints: Vec<&str>,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let waypoints_str = format!("{}|{}", "optimize:true", waypoints.join("|"));
-    let base_url = "https://maps.googleapis.com/maps/api/directions/json";
-    let google_map_api_key = env::var("GOOGLE_MAP_API_KEY").expect("GOOGLE_MAP_API_KEY not set");
-
-    let encoded_destination = urlencoding::encode(destination);
-    let encoded_origin = urlencoding::encode(origin);
-    let encoded_waypoints = urlencoding::encode(&waypoints_str);
-    let encoded_api_key = urlencoding::encode(&google_map_api_key);
-
-    let url = format!(
-        "{}?destination={}&origin={}&waypoints={}&key={}",
-        base_url, encoded_destination, encoded_origin, encoded_waypoints, encoded_api_key
-    );
-    println!("URL: {}", url);
-    let response = reqwest::get(&url).await?;
-
-    if response.status().is_success() {
-        let body = response.text().await?;
-        println!("Body: {}", body);
-        Ok(body)
-    } else {
-        let status_code = response.status().as_u16();
-        let error_msg = format!("Request failed with status code: {}", status_code);
-        println!("{}", error_msg);
-        Err(error_msg.into())
-    }
 }
 
 #[tokio::main]
@@ -46,12 +16,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Fetch the Google Maps API key from the environment
     let destination = "8408 Garvey Ave. #101 Rosemead, CA 91770";
     let origin = "8408 Garvey Ave. #101 Rosemead, CA 91770";
-    let waypoints = vec![
+    let address1 = "3843 Maxson Road #226  El Monte, CA 91732";
+    let address2 = "119 Garcelon Ave Apt B  Monterey Park, CA 91754";
+
+    let _waypoints = vec![
         "3843 Maxson Road #226  El Monte, CA 91732",
         "119 Garcelon Ave Apt B  Monterey Park, CA 91754",
-        "119 Garcelon Ave Apt B  Monterey Park, CA 91754",
-    ]; // Waypoints as a list
-    get_direction(origin, destination, waypoints).await?;
+    ];
+    // get_direction(origin, destination, waypoints).await?;
+    lib::get_geocoding(origin).await?;
+    lib::get_geocoding(address1).await?;
+    lib::get_geocoding(address2).await?;
+
 
     Ok(())
+}
+
+async fn create_fleet_engine_client() -> Result<FleetEngine, Box<dyn std::error::Error>> {
+    // Read the service account key file
+    let sa_key = read_service_account_key("path/to/your/service-account-key.json")
+        .await
+        .expect("Failed to read service account key file");
+
+    // Create an authenticator using the service account credentials
+    let authenticator = ServiceAccountAuthenticator::builder(sa_key)
+        .build()
+        .await?;
+
+    // Create a FleetEngine client
+    let client = FleetEngine::new(
+        hyper::Client::builder().build(hyper_rustls::HttpsConnector::with_native_roots()),
+        authenticator,
+    );
+
+    Ok(client)
 }

@@ -6,6 +6,7 @@
 .vscode/
 *.sublime-project
 *.sublime-workspace
+/secrets
 
 # Ignore dependency directories
 Cargo.lock

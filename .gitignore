@@ -12,3 +12,5 @@ Cargo.lock
 
 # Ignore environment file (if using dotenv)
 .env
+
+/secrets/

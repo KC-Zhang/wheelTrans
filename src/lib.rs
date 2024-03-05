@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use std::env;
 use serde_json::Value;
+use reqwest::{Client, Error, Proxy};
+use std::fs;
+
+use std::process::Command;
 
 #[derive(Debug, Deserialize)]
 struct Location {
@@ -95,4 +99,35 @@ pub async fn get_geocoding (address: &str) -> Result<String, Box<dyn std::error:
         println!("{}", error_msg);
         Err(error_msg.into())
     }
+}
+
+pub(crate) async fn make_post_request(url: &str, body: serde_json::Value) -> Result<(), Error> {
+    let proxy = reqwest::Proxy::all("http://127.0.0.1:7890")?;
+    let client = reqwest::Client::builder().proxy(proxy).build()?;
+
+    // Get access token using gcloud command
+    let access_token_output = Command::new("gcloud")
+        .args(&["auth", "print-access-token"])
+        .output()
+        .map_err(|io_error| reqwest::Error::new(reqwest::ErrorKind::Other, io_error))?;
+
+    let access_token = String::from_utf8_lossy(&access_token_output.stdout).trim().to_string();
+
+    // Make the POST request
+    let response = client.post(url)
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", access_token))
+        .header("x-goog-user-project", "elderlyhometransportation")
+        .body(body.to_string())
+        .send()
+        .await?;
+
+    // Check if the request was successful
+    if response.status().is_success() {
+        println!("Request successful!");
+    } else {
+        println!("Request failed with status: {}, {}", response.status(),  response.text().await?);
+    }
+
+    Ok(())
 }

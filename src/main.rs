@@ -1,13 +1,20 @@
 use reqwest;
 use urlencoding;
 use serde::Deserialize;
-use google_apis::fleetengine::*;
-use yup_oauth2::{read_service_account_key, ServiceAccountAuthenticator};
+use serde_json::Value;
+use std::{env, fs};
 
 mod lib;
 
 fn load_env() {
     dotenv::dotenv().ok();
+}
+
+fn read_request_body() -> Result<Value, Box<dyn std::error::Error>> {
+    let contents =
+        fs::read_to_string("src/resources/request.json").expect("Unable to read request body file");
+    let json: Value = serde_json::from_str(&contents)?;
+    Ok(json)
 }
 
 #[tokio::main]
@@ -24,30 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "119 Garcelon Ave Apt B  Monterey Park, CA 91754",
     ];
     // get_direction(origin, destination, waypoints).await?;
-    lib::get_geocoding(origin).await?;
-    lib::get_geocoding(address1).await?;
-    lib::get_geocoding(address2).await?;
+    // lib::get_geocoding(origin).await?;
+    // lib::get_geocoding(address1).await?;
+    // lib::get_geocoding(address2).await?;
 
+    let url = "https://cloudoptimization.googleapis.com/v1/projects/elderlyhometransportation:optimizeTours";
+    let body = read_request_body()?;
+    lib::make_post_request(url, body).await?;
 
     Ok(())
-}
-
-async fn create_fleet_engine_client() -> Result<FleetEngine, Box<dyn std::error::Error>> {
-    // Read the service account key file
-    let sa_key = read_service_account_key("path/to/your/service-account-key.json")
-        .await
-        .expect("Failed to read service account key file");
-
-    // Create an authenticator using the service account credentials
-    let authenticator = ServiceAccountAuthenticator::builder(sa_key)
-        .build()
-        .await?;
-
-    // Create a FleetEngine client
-    let client = FleetEngine::new(
-        hyper::Client::builder().build(hyper_rustls::HttpsConnector::with_native_roots()),
-        authenticator,
-    );
-
-    Ok(client)
 }

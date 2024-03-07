@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:54b92a7636c8fb5beba2b1190e7bc97216ba71e03c7ec9de0818ce9cceca5b0e"
+content_hash = "sha256:f7b591a1cb227c23340a937502a8e282fb76b7a25c3958c93daa59d074644f66"
 
 [[package]]
 name = "anyio"
@@ -1212,6 +1212,17 @@ groups = ["default"]
 files = [
     {file = "platformdirs-4.2.0-py3-none-any.whl", hash = "sha256:0614df2a2f37e1a662acbd8e2b25b92ccf8632929bc6d43467e17fe89c75e068"},
     {file = "platformdirs-4.2.0.tar.gz", hash = "sha256:ef0cc731df711022c174543cb70a9b5bd22e5a9337c8624ef2c2ceb8ddad8768"},
+]
+
+[[package]]
+name = "polyline"
+version = "2.0.2"
+requires_python = ">=3.7"
+summary = "A Python implementation of Google's Encoded Polyline Algorithm Format."
+groups = ["default"]
+files = [
+    {file = "polyline-2.0.2-py3-none-any.whl", hash = "sha256:389655c893bdabf2863c6aaa49490cf83dcdcec86ae715f67044ee98be57bef5"},
+    {file = "polyline-2.0.2.tar.gz", hash = "sha256:10541e759c5fd51f746ee304e9af94744089a4055b6257b293b3afd1df64e369"},
 ]
 
 [[package]]

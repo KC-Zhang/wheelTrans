@@ -13,3 +13,6 @@ Cargo.lock
 
 # Ignore environment file (if using dotenv)
 .env
+
+# Ignore Mac specific files
+.DS_Store

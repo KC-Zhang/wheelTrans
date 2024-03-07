@@ -1,0 +1,26 @@
+[project]
+name = "wheelTrans"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "KC-Zhang", email = "kc.zhang.ut@gmail.com"},
+]
+dependencies = [
+    "requests>=2.31.0",
+    "googlemaps>=4.10.0",
+    "google-cloud-optimization>=1.8.3",
+    "pandas>=2.2.1",
+    "notebook>=7.1.1",
+    "python-dotenv>=1.0.1",
+    "openpyxl>=3.1.2",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true

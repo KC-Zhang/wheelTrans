@@ -16,3 +16,6 @@ Cargo.lock
 
 # Ignore Mac specific files
 .DS_Store
+
+#output
+src/wheeltrans/output

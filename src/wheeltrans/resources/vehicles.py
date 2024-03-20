@@ -1,6 +1,7 @@
 
 vehicles = [
     {
+    "label":"Kiet",
     "loadLimits": {
       "weight": {
         "maxLoad": 7

@@ -40,7 +40,7 @@ notSignupPath = os.path.join(temp_directory, 'notSignups.csv')
 failedSignupPath = os.path.join(temp_directory, 'failedSignups.csv')
 directionsPath = os.path.join(temp_directory, 'directions.csv')
 
-def getRoute2(df, dfSignup):
+def getRoute(df, dfSignup):
     flat = dfSignup.stack().dropna().astype(int).tolist()
     #legacy code for day filter
     # weekday = 'M' # 'M', 'T', 'W', 'R', 'F'
@@ -59,24 +59,6 @@ def getRoute2(df, dfSignup):
     vehiclesIds= plotResults(optimizedDf)
 
     return vehiclesIds
-
-def getRoute():
-    # Load the data
-    df, flat = loadData()
-    cleanDf, invalidAddressDf, invalidTrans, notSignupDF, failedSignupList = etl(df, flat)
-    geocodedDf = geocodeDf(cleanDf)
-    requestJson = getRequestBody(geocodedDf)
-
-    fleet_routing_client = optimization_v1.FleetRoutingClient()
-    fleetOptimizationRequest = optimization_v1.OptimizeToursRequest.from_json(requestJson)
-    fleetOptimizationResponse = fleet_routing_client.optimize_tours(
-        fleetOptimizationRequest, timeout=100,
-    )
-
-    optimizedDf =  etlResult(fleetOptimizationResponse, geocodedDf)
-    plotResults(optimizedDf)
-
-
 
 
 def loadData():

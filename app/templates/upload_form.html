@@ -4,13 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV Upload and Download as ZIP</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org"></script>
 </head>
-<body>
-    <h1>Upload CSV Files</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file1" required accept=".csv"><br><br>
-        <input type="file" name="file2" required accept=".csv"><br><br>
-        <button type="submit">Upload Files</button>
-    </form>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-semibold mb-4">Upload CSV Files</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data" hx-indicator="#loadingIndicator" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <div class="mb-4">
+                <p class="block text-gray-700 text-sm font-bold mb-2">Transport list</p>
+                <input type="file" name="file1" required accept=".csv" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-6">
+                <p class="block text-gray-700 text-sm font-bold mb-2">Daily signup list</p>
+                <input type="file" name="file2" required accept=".csv" class="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Upload Files
+                </button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

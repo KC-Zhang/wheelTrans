@@ -8,12 +8,11 @@ from datetime import datetime, timezone, timedelta
 import pandas
 import numpy as np
 from IPython.display import display
-from resources.vehicles import vehicles
 import json  
 import re
 import io
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from resources.vehicles import vehicles
+from app.routing.resources.vehicles import vehicles
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -31,13 +30,40 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 residentDataPath = ROOT_PATH + "/resources/TransportList.csv"
 signupSheetPath = ROOT_PATH + "/resources/MondaySignup.csv"
 outputDir = ROOT_PATH + "/output"
+temp_directory = "app/temp"
 gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAP_API_KEY"))
 
+invalidAddressPath = os.path.join(temp_directory, 'invalidAddress.csv')
+invalidTransPath = os.path.join(temp_directory, 'invalidTransportation.csv')
+signupPath = os.path.join(temp_directory, 'signups.csv')
+notSignupPath = os.path.join(temp_directory, 'notSignups.csv')
+failedSignupPath = os.path.join(temp_directory, 'failedSignups.csv')
+directionsPath = os.path.join(temp_directory, 'directions.csv')
 
-def main():
+def getRoute2(df, dfSignup):
+    flat = dfSignup.stack().dropna().astype(int).tolist()
+    #legacy code for day filter
+    # weekday = 'M' # 'M', 'T', 'W', 'R', 'F'
+    # attendingAMdf = df[df[weekday].notna() & (df['Trans Method'].str.contains('am', case=False))]
+    cleanDf, invalidAddressDf, invalidTrans, notSignupDF, failedSignupList = etl(df, flat)
+    geocodedDf, invalidGeoCodeDf = geocodeDf(cleanDf)
+    requestJson = getRequestBody(geocodedDf)
+    
+    fleet_routing_client = optimization_v1.FleetRoutingClient()
+    fleetOptimizationRequest = optimization_v1.OptimizeToursRequest.from_json(requestJson)
+    fleetOptimizationResponse = fleet_routing_client.optimize_tours(
+        fleetOptimizationRequest, timeout=100,
+    )
+
+    optimizedDf =  etlResult(fleetOptimizationResponse, geocodedDf)
+    vehiclesIds= plotResults(optimizedDf)
+
+    return vehiclesIds
+
+def getRoute():
     # Load the data
     df, flat = loadData()
-    cleanDf = etl(df, flat)
+    cleanDf, invalidAddressDf, invalidTrans, notSignupDF, failedSignupList = etl(df, flat)
     geocodedDf = geocodeDf(cleanDf)
     requestJson = getRequestBody(geocodedDf)
 
@@ -64,34 +90,34 @@ def loadData():
     return df, flat
 
 def etl(df, flat):
-    validAddressDf = validateAddress(df)
-    validDf = validateTransMethod(validAddressDf)
+    validAddressDf, invalidAddressDf = validateAddress(df)
+    validDf, invalidTrans = validateTransMethod(validAddressDf)
     attendingAMdf = validDf[validDf['Trans Method'].str.contains('am', case=False, na=False)]
     mrInt = attendingAMdf['MR #'].str.replace(r'\D','' , regex=True).astype(int)
     signupDF = attendingAMdf[mrInt.isin(flat)]
     notSignupDF = attendingAMdf[~mrInt.isin(flat)]
     cleanDf = signupDF.loc[:, ['MR #','Address','Trans Method', 'M', 'T', 'W', 'R', 'F', 'Notes', "Driver"]]
-    failedSignups_invalidAddressOrTransMethod= set(flat) - set(validDf['MR #'].str.replace(r'\D','' , regex=True).astype(int))
-    saveSignups(cleanDf, notSignupDF, failedSignups_invalidAddressOrTransMethod)
-    return cleanDf
+    failedSignupList= set(flat) - set(validDf['MR #'].str.replace(r'\D','' , regex=True).astype(int))
+    saveSignups(cleanDf, notSignupDF, failedSignupList)
+    return cleanDf, invalidAddressDf, invalidTrans, notSignupDF, failedSignupList
 
 def validateAddress(df):
     invalidAddressDf = df[df['Address'].isna()]
     print ("invalid address", invalidAddressDf)
-    invalidAddressDf.to_csv(outputDir +'/invalidAddress.csv', index=False)
-    return df[df['Address'].notna()]
+    invalidAddressDf.to_csv(invalidAddressPath, index=False)
+    return df[df['Address'].notna()], invalidAddressDf
 def validateTransMethod(df_):
     invalidTrans = df_[df_['Trans Method'].isna()]
-    invalidTrans.to_csv(outputDir +'/invalidTrans.csv', index=False)
+    invalidTrans.to_csv(invalidTransPath, index=False)
     print('trans method invalid',invalidTrans)
-    return df_[df_['Trans Method'].notna()]
+    return df_[df_['Trans Method'].notna()], invalidTrans
 def saveSignups(signupDf, notSignupDF, failedSignupList):
-    signupDf.to_csv(outputDir +'/signup.csv', index=False)
-    notSignupDF.to_csv(outputDir +'/notSignup.csv', index=False)
-    with open(outputDir +'/failedSignup.txt', 'w') as f:
+    signupDf.to_csv(signupPath, index=False)
+    notSignupDF.to_csv(notSignupPath, index=False)
+    with open(failedSignupPath, 'w') as f:
         for item in failedSignupList:
             f.write("%s\n" % item)
-        return
+    return signupDf, notSignupDF, failedSignupList
 
 def geocodeDf(cleanDf):
     columns = cleanDf.columns
@@ -108,8 +134,8 @@ def geocodeDf(cleanDf):
             print(f"Failed to get geocoding for {row['Address']}")
             invalidGeoCodeDf = pandas.concat([invalidGeoCodeDf, pandas.DataFrame([row])], ignore_index=True, axis=0)
 
-    invalidGeoCodeDf.to_csv(outputDir +'/invalidAddress.csv', index=False, mode='a', header=False)
-    return geocodedDf
+    invalidGeoCodeDf.to_csv(invalidAddressPath, index=False, mode='a', header=False)
+    return geocodedDf, invalidGeoCodeDf
 def get_geocoding(gmaps, address):
     result = gmaps.geocode(address)
     if not result or len(result) != 1:
@@ -270,7 +296,7 @@ def plotResults(optimizedDf):
     destination = (34.0623483, -118.0859541)  # Los Angeles, CA
     vehiclesIds = optimizedDf['vehicle'].unique()
 
-    with open(outputDir +f"/directions.csv", "w") as f:
+    with open(directionsPath, "w") as f:
         f.write('')
 
     for vehicleId in vehiclesIds:
@@ -290,7 +316,7 @@ def plotResults(optimizedDf):
         #     table_data.append(list([f'Driver {vehicles[vehicleId]['label']}']))
         table_data.append(list([f'{number_of_seats} seats']))
 
-        with open(outputDir + f"/directions.csv", "a") as f:
+        with open(directionsPath, "a") as f:
             f.write(f'\nVehicle {vehicleId+1}\n')
 
         for tripId in tripIds:
@@ -310,7 +336,7 @@ def plotResults(optimizedDf):
             
             # tripDf[['order', 'MR #', 'Address', 'Arrival Time', 'Notes']].to_csv(outputDir +f'/waypointInfo{vehicleId}.csv', header=True, index=False, mode='a')
             dfMetaTail = pandas.DataFrame([[f"Trip {tripId+1}", navigationUrl]])
-            dfMetaTail.to_csv(outputDir +f'/directions.csv',header=False, index=False, mode='a')
+            dfMetaTail.to_csv(directionsPath, header=False, index=False, mode='a')
             #row count
             NOfPickups+=tripDf[tripDf['MR #']!=''].shape[0]
 
@@ -343,11 +369,11 @@ def plotResults(optimizedDf):
         table = Table(table_data)
         table.setStyle(table_style)
         pdf_table.append(table)
-        pdf = SimpleDocTemplate(outputDir +f'/waypointInfo{vehicleId}.pdf', pagesize=letter)
+        pdf = SimpleDocTemplate(temp_directory +f'/waypointInfo{vehicleId}.pdf', pagesize=letter)
         pdf.build(pdf_table)
 
         print(f"Vehicle {vehicleId+1} has {NOfPickups} passengers")
-
+    return vehiclesIds
 
 def drawToImage(byteImage, filename, waypoints):
     image = Image.open(io.BytesIO(byteImage))
@@ -362,7 +388,7 @@ def drawToImage(byteImage, filename, waypoints):
     text_color = (0, 0, 0)
     draw.text(text_position, text, fill=text_color, font=font)
 
-    padded_image.save(outputDir + f"/{filename}.png")
+    padded_image.save(temp_directory + f"/{filename}.png")
 
 def generate_static_map(origin, destination, routePolyline, waypoints,filename):
     startingMarker = f'34.0623483,-118.0859541'
@@ -395,8 +421,8 @@ def createPdf(vehicleId, number_of_seats, df_ ):
     pdf_table = []
     pdf_table.append(table)
 
-    pdf = SimpleDocTemplate(outputDir +f'/waypointInfo{vehicleId}.pdf', pagesize=letter)
+    pdf = SimpleDocTemplate(temp_directory +f'/waypointInfo{vehicleId}.pdf', pagesize=letter)
     pdf.build(pdf_table)
 
 if __name__ == '__main__':
-    main()
+    getRoute()

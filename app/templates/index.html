@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FastAPI with Jinja2</title>
+    <title>CSV Upload</title>
 </head>
 <body>
-    <h1>Welcome to FastAPI with Jinja2</h1>
-    <form action="/submit/" method="post">
-        <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name"><br>
-        <label for="age">Age:</label><br>
-        <input type="number" id="age" name="age"><br><br>
-        <input type="submit" value="Submit">
+    <form action="/upload" method="post" enctype="multipart/form-data" hx-post="/upload" hx-target="#download-link" hx-swap="outerHTML">
+        <input type="file" name="file1" required>
+        <input type="file" name="file2" required>
+        <button type="submit">Upload</button>
     </form>
+    <div id="download-link"></div>
+    <script src="https://unpkg.com/htmx.org"></script>
 </body>
 </html>

@@ -80,9 +80,9 @@ def etl(df, flat):
     notSignupDF = attendingAMdf[~mrInt.isin(flat)]
     cleanDf = signupDF.loc[:, ['MR #','Address','Trans Method', 'M', 'T', 'W', 'R', 'F', 'Notes', "Driver"]]
 
-    
+
     #dev only
-    cleanDf = cleanDf[:10]
+    # cleanDf = cleanDf[:10]
 
 
 

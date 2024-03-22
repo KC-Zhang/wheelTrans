@@ -8,6 +8,10 @@ import os
 from app.routing.routing import getRoute
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.status import HTTP_401_UNAUTHORIZED
+from dotenv import load_dotenv
+
+load_dotenv()
+
 security = HTTPBasic()
 
 
@@ -23,7 +27,8 @@ app = FastAPI()
 
 def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = "admin"
-    correct_password = "middleware"
+    correct_password = os.getenv("PASSWORD")
+
     
     if credentials.username == correct_username and credentials.password == correct_password:
         return credentials.username

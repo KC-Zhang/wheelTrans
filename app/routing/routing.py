@@ -17,11 +17,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 
+
 load_dotenv()
-proxy_address = "http://127.0.0.1:7890"
-# Set the environment variables to specify the proxy
-os.environ["HTTP_PROXY"] = proxy_address
-os.environ["HTTPS_PROXY"] = proxy_address
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/kaicheng/ProjectsFormal/wheelTrans/secrets/key.json"
 os.environ["PROJECT_ID"] = "elderlyhometransportation"
 googleMapKey = os.getenv("GOOGLE_MAP_API_KEY")

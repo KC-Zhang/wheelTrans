@@ -21,3 +21,6 @@ Cargo.lock
 src/wheeltrans/output
 
 .venv/
+app/temp
+__pycache__/
+app/routing/__pycache__/

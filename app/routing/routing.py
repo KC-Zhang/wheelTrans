@@ -19,7 +19,7 @@ from reportlab.lib import colors
 
 
 load_dotenv()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/kaicheng/ProjectsFormal/wheelTrans/secrets/key.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/kaicheng/ProjectsFormal/wheelTrans/secrets/key.json"
 os.environ["PROJECT_ID"] = "elderlyhometransportation"
 googleMapKey = os.getenv("GOOGLE_MAP_API_KEY")
 
@@ -79,7 +79,7 @@ def etl(df, flat):
 
     
     #dev only
-    cleanDf = cleanDf[:10]
+    # cleanDf = cleanDf[:20]
 
 
 

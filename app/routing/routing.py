@@ -38,7 +38,7 @@ failedSignupPath = os.path.join(temp_directory, 'failedSignups.csv')
 directionsPath = os.path.join(temp_directory, 'directions.csv')
 
 def getRoute(df, dfSignup):
-    flat = dfSignup.stack().dropna().astype(int).tolist()
+    flat = dfSignup.stack().dropna().astype(str).str.replace(r'\D', '', regex=True).astype(int).tolist()
     #legacy code for day filter
     # weekday = 'M' # 'M', 'T', 'W', 'R', 'F'
     # attendingAMdf = df[df[weekday].notna() & (df['Trans Method'].str.contains('am', case=False))]
@@ -60,7 +60,7 @@ def getRoute(df, dfSignup):
 
 def loadData():
     dailySignupDf = pandas.read_csv(signupSheetPath)
-    flat = dailySignupDf.stack().dropna().astype(int).tolist()
+    flat = dailySignupDf.stack().dropna().astype(str).str.replace(r'\D', '', regex=True).astype(int).tolist()
     #legacy code for day filter
     # weekday = 'M' # 'M', 'T', 'W', 'R', 'F'
     # attendingAMdf = df[df[weekday].notna() & (df['Trans Method'].str.contains('am', case=False))]
@@ -72,7 +72,7 @@ def etl(df, flat):
     validAddressDf, invalidAddressDf = validateAddress(df)
     validDf, invalidTrans = validateTransMethod(validAddressDf)
     attendingAMdf = validDf[validDf['Trans Method'].str.contains('am', case=False, na=False)]
-    mrInt = attendingAMdf['MR #'].str.replace(r'\D','' , regex=True).astype(int)
+    mrInt = attendingAMdf['MR #'].astype(str).str.replace(r'\D','' , regex=True).astype(int)
     signupDF = attendingAMdf[mrInt.isin(flat)]
     notSignupDF = attendingAMdf[~mrInt.isin(flat)]
     cleanDf = signupDF.loc[:, ['MR #','Address','Trans Method', 'M', 'T', 'W', 'R', 'F', 'Notes', "Driver"]]
@@ -84,7 +84,7 @@ def etl(df, flat):
 
 
 
-    failedSignupList= set(flat) - set(validDf['MR #'].str.replace(r'\D','' , regex=True).astype(int))
+    failedSignupList= set(flat) - set(validDf['MR #'].astype(str).str.replace(r'\D','' , regex=True).astype(int))
     saveSignups(cleanDf, notSignupDF, failedSignupList)
     return cleanDf, invalidAddressDf, invalidTrans, notSignupDF, failedSignupList
 
